@@ -1,4 +1,4 @@
-- title: 第0单元：欢迎来到Hugging Face音频课程！
+- title: 第 0 单元：欢迎来到Hugging Face音频课程！
   sections:
   - local: chapter0/introduction
     title: 课堂目标
@@ -7,7 +7,7 @@
   - local: chapter0/community
     title: 加入社区
 
-- title: 第1单元：音频数据处理
+- title: 第 1 单元：音频数据处理
   sections:
   - local: chapter1/introduction
     title: 单元简介
@@ -25,7 +25,7 @@
   - local: chapter1/supplemental_reading
     title: 补充阅读
 
-- title: 第2单元：音频应用的入门介绍
+- title: 第 2 单元：音频应用的入门介绍
   sections:
   - local: chapter2/introduction
     title: 音频应用概览
@@ -36,7 +36,7 @@
   - local: chapter2/hands_on
     title: 实战练习
 
-- title: 第3单元：音频Transformer结构
+- title: 第 3 单元：音频Transformer结构
   sections:
   - local: chapter3/introduction
     title: Transformer模型回顾
@@ -65,7 +65,7 @@
 #  - local: chapter4/hands_on
 #    title: 实战练习
 #
-- title: 第5单元：自动语音识别 (ASR)
+- title: 第 5 单元：自动语音识别（ASR）
   sections:
   - local: chapter5/introduction
     title: 单元简介
@@ -84,7 +84,7 @@
   - local: chapter5/supplemental_reading
     title: 补充阅读
 
-- title: 第六单元：从文本到语音
+- title: 第 6 单元：从文本到语音
   sections:
   - local: chapter6/introduction
     title: 单元简介
@@ -100,52 +100,30 @@
     title: 实战练习
   - local: chapter6/supplemental_reading
     title: 补充阅读
-#
-#- title: 第7单元：音频到音频合成(ATA)
-#  sections:
-#  - local: chapter7/introduction
-#    title: 单元简介
-#  - local: chapter7/tasks
-#    title: 音频到音频合成（ATA）任务实例
-#  - local: chapter7/choosing_dataset
-#    title: 数据集选择
-#  - local: chapter7/preprocessing
-#    title: 数据加载和预处理
-#  - local: chapter7/evaluation
-#    title: 音频到音频合成（ATA）的评价指标
-#  - local: chapter7/fine-tuning
-#    title: 模型微调
-#  - local: chapter7/quiz
-#    title: 习题
-#    quiz: 7
-#  - local: chapter7/hands_on
-#    title: 实战练习
-#  - local: chapter7/supplemental_reading
-#    title: 补充阅读
-#
-#- title: 第8单元：终点线
-#  sections:
-#  - local: chapter8/introduction
-#    title: Congratulations!
-#  - local: chapter8/certification
-#    title: Get your certification of completion
-#  - local: chapter8/stay_in_touch
-#    title: Stay in touch
-#
-#- title: 附加单元：音频扩散模型
-#  sections:
-#  - local: chapter9/introduction
-#    title: 单元简介
-#  - local: chapter9/music_generation
-#    title: 音乐生成
-#  - local: chapter9/riffusion
-#    title: Riffusion模型
-#  - local: chapter9/audioldm
-#    title: AudioLDM模型
-#  - local: chapter9/dance_diffusion
-#    title: Dance Diffusion模型
 
-#- title: 课程活动
-#  sections:
-#  - local: events/introduction
-#    title: 直播录像
+- title: 第 7 单元：综合运用
+  sections:
+  - local: chapter7/introduction
+    title: 单元简介
+  - local: chapter7/speech-to-speech
+    title: 语音到语音翻译
+#   - local: chapter7/voice-assistant
+#     title: 创建语音助手
+#   - local: chapter7/transcribe-meeting
+#     title: 会议记录
+#   - local: chapter7/hands_on
+#     title: 实战练习
+#   - local: chapter7/supplemental_reading
+#     title: 补充阅读
+
+# - title: Unit 8. Finish line
+#   sections:
+#   - local: chapter8/introduction
+#     title: Congratulations!
+#   - local: chapter8/certification
+#     title: Get your certificate of completion
+
+# - title: Course Events
+#   sections:
+#   - local: events/introduction
+#     title: Live sessions and workshops

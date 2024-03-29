@@ -1,0 +1,218 @@
+# 语音到语音翻译
+
+语音到语音的翻译（Speech-to-speech translation，简称 STST 或 S2ST）是一个相对较新的语音处理任务。它涉及将一种语言的语音翻译成**不同**语言的语音：
+
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/huggingface-course/audio-course-images/resolve/main/s2st.png" alt="Diagram of speech to speech translation">
+</div>
+
+STST 可以视为传统机器翻译（machine translation，简称 MT）任务的扩展：不是将一种语言的**文本**翻译成另一种语言，而是将一种语言的**语音**翻译成另一种语言。
+STST 应用于多语言交流领域，使不同语言的说话人能够通过语音媒介进行交流。
+
+如果您想跨越语言障碍与另一个人交流，与其编写您想要传达的信息，然后将其翻译成目标语言的文本，不如直接说出来，并让 STST 系统将您的语音转换成目标语言。
+然后接收者可以回复 STST 系统，您可以听到他们的回应。与基于文本的机器翻译相比，这是一种更自然的沟通方式。
+
+在本章中，我们将探索一种*级联*的 STST 方法，将您在本课程第 5 和 6 单元中获得的知识整合在一起。我们将使用*语音翻译*（ST）系统将源语言的语音转写成目标语言的文本，
+然后使用*语音合成*（TTS）从翻译后的文本生成目标语言的语音：
+
+<div class="flex justify-center">
+    <img src="https://huggingface.co/datasets/huggingface-course/audio-course-images/resolve/main/s2st_cascaded.png" alt="Diagram of cascaded speech to speech translation">
+</div>
+
+我们也可以使用三阶段方法，首先使用语音识别（ASR）系统将源语音转写成同一语言的文本，然后使用 ST 将转写文本翻译成目标语言，最后使用 TTS 生成目标语言的语音。
+然而，向流程中添加更多组件会导致*错误传播*，即一个系统引入的错误在流经后面的系统时被加剧；并且由于需要用更多模型进行推理，延迟也会增加。
+
+虽然这种级联方法很直接，甚至有些简陋，但它产生了非常有效的 STST 系统。ASR + MT + TTS 的三阶段级联系统曾被用来支持许多商业 STST 产品，包括 [Google 翻译](https://ai.googleblog.com/2019/05/introducing-translatotron-end-to-end.html)。
+这也是一种非常高效利用数据和计算资源的开发 STST 系统的方式，因为只需要把现有的 ASR 和 TTS 系统结合在一起，无需任何额外训练就能产生新的 STST 模型。
+
+接下来，我们将创建一个将任何语言 X 的语音翻译成英语语音的 STST 系统。这里涵盖的方法可以扩展到将任何语言 X 翻译成任何语言 Y 的 STST 系统，
+我们将其留给读者自行探索，并在适当的地方提供指引。我们进一步将 STST 任务分为两个组成部分：ST 和 TTS。我们将它们组合在一起并构建一个 Gradio demo 来展示我们的系统。
+
+## 语音翻译
+
+我们将使用 Whisper 模型作为我们的语音翻译系统，因为它能够将超过 96 种语言翻译成英语。具体来说，我们将加载 [Whisper Base](https://huggingface.co/openai/whisper-base) 检查点，该检查点有 7400 万个参数。它绝不是性能最强的 Whisper 模型，[最大的 Whisper 检查点](https://huggingface.co/openai/whisper-large-v2) 还要大大约 20 倍，但由于我们正在连接两个自回归系统（ST + TTS），我们希望确保每个模型都能相对快速地生成，以获得可接受的推理速度：
+
+```python
+import torch
+from transformers import pipeline
+
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+pipe = pipeline(
+    "automatic-speech-recognition", model="openai/whisper-base", device=device
+)
+```
+
+好！为了测试我们的 STST 系统，我们将加载一个非英语的音频样本。让我们加载 [VoxPopuli](https://huggingface.co/datasets/facebook/voxpopuli) 数据集的意大利语（`it`）子集中的第一条数据：
+
+```python
+from datasets import load_dataset
+
+dataset = load_dataset("facebook/voxpopuli", "it", split="validation", streaming=True)
+sample = next(iter(dataset))
+```
+
+要收听这个样本，我们可以使用数据集查看器在 Hub 上播放：[facebook/voxpopuli/viewer](https://huggingface.co/datasets/facebook/voxpopuli/viewer/it/validation?row=0)
+
+或者使用 ipynb 音频功能播放：
+
+```python
+from IPython.display import Audio
+
+Audio(sample["audio"]["array"], rate=sample["audio"]["sampling_rate"])
+```
+
+现在让我们定义一个函数，它接受这个音频输入并返回翻译后的文本。我们需要传入生成关键字参数 `"task"`，将其设置为 `"translate"`，以确保 Whisper 执行的是语音翻译而不是语音识别：
+
+```python
+def translate(audio):
+    outputs = pipe(audio, max_new_tokens=256, generate_kwargs={"task": "translate"})
+    return outputs["text"]
+```
+
+<Tip>
+
+    Whisper 也可以被“欺骗”以从任何语言 X 的语音翻译成任何语言 Y 的文本。只需将任务设置为 `"transcribe"` 并在生成关键字参数中将 `"language"` 设置为目标语言，例如对于西班牙语，可以设置：
+
+	`generate_kwargs={"task": "transcribe", "language": "es"&rcub;`
+
+</Tip>
+
+让我们快速检查一下我们从模型得到的结果是否合理：
+
+```python
+translate(sample["audio"].copy())
+```
+```
+' psychological and social. I think that it is a very important step in the construction of a juridical space of freedom, circulation and protection of rights.'
+```
+
+不错！如果我们将这个与源文本进行比较：
+
+```python
+sample["raw_text"]
+```
+```
+'Penso che questo sia un passo in avanti importante nella costruzione di uno spazio giuridico di libertà di circolazione e di protezione dei diritti per le persone in Europa.'
+```
+
+我们看到翻译大致上是正确的（您可以使用 Google 翻译进行复核），除了在转写开始时多了前一个句子最后没说完的几个词。
+
+到此为止，我们已经完成了我们的级联 STST 流水线的第一半，将我们在第 5 单元中获得的技能付诸实践，当时我们学习了如何使用 Whisper 模型进行语音识别和翻译。
+如果您想复习我们学过的所有步骤，请阅读单元 5 中关于 [语音识别的预训练模型](../chapter5/asr_models) 的部分。
+
+## 语音合成
+
+我们的级联 STST 系统的第二半需要将英语文本映射到英语语音。为此，我们将使用预训练的 [SpeechT5 TTS](https://huggingface.co/microsoft/speecht5_tts) 模型进行英语 TTS。
+🤗 Transformers 目前没有 TTS `pipeline`，所以我们必须直接使用模型进行推理。这没什么难的，学过第 6 单元后我们都是使用模型进行推理的专家了！
+
+首先，让我们从预训练检查点加载 SpeechT5 处理器、模型和声码器：
+
+```python
+from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
+
+processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
+
+model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
+vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
+```
+
+<Tip>
+    这里我们使用专门为英语 TTS 训练的 SpeechT5 检查点。如果您希望翻译成其他语言，可以更换为专门针对您的目标语言微调过的 SpeechT5 TTS 模型检查点，或者使用在您的目标语言上预训练的 MMS TTS 检查点。
+</Tip>
+
+与使用 Whisper 模型时一样，如果我们有 GPU 加速设备，可以将 SpeechT5 模型和声码器放在上面：
+
+```python
+model.to(device)
+vocoder.to(device)
+```
+
+太好了！让我们加载说话人嵌入：
+
+```python
+embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
+speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
+```
+
+现在我们可以编写一个函数，接受文本提示词作为输入，并生成相应的语音。我们将首先使用 SpeechT5 处理器对文本输入进行预处理，对文本进行分词以获取我们的输入 ID。
+然后，我们将输入词元和说话人嵌入传递给 SpeechT5 模型，并且有的话就把它们放到 GPU 上。最后，我们将返回生成的语音，将其带回 CPU，以便我们可以在 ipynb 笔记本中播放它：
+
+```python
+def synthesise(text):
+    inputs = processor(text=text, return_tensors="pt")
+    speech = model.generate_speech(
+        inputs["input_ids"].to(device), speaker_embeddings.to(device), vocoder=vocoder
+    )
+    return speech.cpu()
+```
+
+让我们随便用一个文本输入来检查它是否有效：
+
+```python
+speech = synthesise("Hey there! This is a test!")
+
+Audio(speech, rate=16000)
+```
+
+听起来不错！现在让我们进入激动人心的部分——将所有内容整合在一起。
+
+## 创建一个 STST demo
+
+在创建一个 [Gradio](https://gradio.app) demo 来展示我们的 STST 系统之前，让我们先进行一个快速的完整性检查，以确保我们可以将两个模型串联起来，输入源音频并获取输出音频。我们串联我们在前两个小节中定义的两个函数，输入源音频并获取翻译后的文本，然后合成翻译后的文本以获得翻译后的语音。最后，我们将合成的语音转换为 `int16` 数组，这是 Gradio 期望的输出音频文件格式。为此，我们首先需要按目标数据类型（`int16`）的动态范围规范化音频数组，然后从默认的 NumPy 数据类型（`float64`）转换为目标数据类型（`int16`）：
+
+```python
+import numpy as np
+
+target_dtype = np.int16
+max_range = np.iinfo(target_dtype).max
+
+
+def speech_to_speech_translation(audio):
+    translated_text = translate(audio)
+    synthesised_speech = synthesise(translated_text)
+    synthesised_speech = (synthesised_speech.numpy() * max_range).astype(np.int16)
+    return 16000, synthesised_speech
+```
+
+让我们检查这个串联的函数是否给出了预期的结果：
+
+```python
+sampling_rate, synthesised_speech = speech_to_speech_translation(sample["audio"])
+
+Audio(synthesised_speech, rate=sampling_rate)
+```
+
+完美！现在我们将它包装成一个漂亮的 Gradio demo，以便我们可以使用麦克风输入或文件输入记录我们的源语音，并回放系统预测的音频：
+
+```python
+import gradio as gr
+
+demo = gr.Blocks()
+
+mic_translate = gr.Interface(
+    fn=speech_to_speech_translation,
+    inputs=gr.Audio(source="microphone", type="filepath"),
+    outputs=gr.Audio(label="Generated Speech", type="numpy"),
+)
+
+file_translate = gr.Interface(
+    fn=speech_to_speech_translation,
+    inputs=gr.Audio(source="upload", type="filepath"),
+    outputs=gr.Audio(label="Generated Speech", type="numpy"),
+)
+
+with demo:
+    gr.TabbedInterface([mic_translate, file_translate], ["Microphone", "Audio File"])
+
+demo.launch(debug=True)
+```
+
+这将启动一个类似于在 Hugging Face Space 上运行的 Gradio demo：
+
+<iframe src="https://course-demos-speech-to-speech-translation.hf.space" frameBorder="0" height="450" title="Gradio app" class="container p-0 flex-grow space-iframe" allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"></iframe>
+
+您可以 [复制](https://huggingface.co/spaces/course-demos/speech-to-speech-translation?duplicate=true) 这个 demo 并调整它，使用不同的 Whisper 检查点、TTS 检查点，或选择不局限于英语，遵循提示将其翻译成您选择的任何语言！
+
+## 展望未来
+
+虽然级联系统是一种高效计算和利用数据的构建 STST 系统的方式，但它存在上述的错误传播和延迟的问题。最近的研究探索了 STST 更*直接*的方法，这种方法不经过中间的文本输出，而是直接从源语音映射到目标语音。这些系统还能够在目标语音中保留源说话人的声音特征（如韵律、音高和语调）。如果您对这些系统想了解更多，可以查看 [补充阅读](supplemental_reading) 部分列出的资源。

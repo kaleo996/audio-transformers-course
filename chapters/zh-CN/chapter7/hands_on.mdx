@@ -1,0 +1,19 @@
+# 实战练习
+
+在本单元中，我们整合了之前六个单元的内容，构建了三个综合的语音（audio）应用。正如您所体验到的，通过在本课程中获得的基础技能，构建更复杂的语音工具是完全可行的。
+
+实践练习采用了本单元中涵盖的一个应用，并通过一些多语言（multilingual）的调整对其进行了扩展 🌍 您的目标是从本单元的第一部分中取出[cascaded speech-to-speech translation Gradio demo](https://huggingface.co/spaces/course-demos/speech-to-speech-translation)，并更新它以翻译成任何**非英语**（non-English）语言。也就是说，demo 应该将 X 语言的语音翻译成 Y 语言的语音，其中目标语言 Y 不是英语。您应该首先在您的 Hugging Face 命名空间下[复制](https://huggingface.co/spaces/course-demos/speech-to-speech-translation?duplicate=true)模板。没有必要使用 GPU 加速器设备 - 免费的 CPU 层就可以工作得很好 🤗 然而，您应确保您的 demo 的可见性设置为**公开**，这样我们才能访问您的 demo 并检查其正确性。
+
+在[语音到语音翻译（speech-to-speech translation）](speech-to-speech)部分提供了更新语音翻译功能以执行多语言语音翻译的提示。通过遵循这些说明，您应该能够更新 demo，将语音从 X 语言翻译成 Y 语言的文本，这是任务的一半！
+
+为了将 Y 语言的文本合成为 Y 语言的语音，其中 Y 是一种多语言，您需要使用多语言 TTS 检查点。对此，您可以使用您在上一个实践练习中微调的 SpeechT5 TTS 检查点，或者使用预训练的多语言 TTS 检查点。有两种预训练检查点的选择，要么是针对[VoxPopuli](https://huggingface.co/datasets/facebook/voxpopuli)数据集的荷兰语部分微调的 SpeechT5 检查点[sanchit-gandhi/speecht5_tts_vox_nl](https://huggingface.co/sanchit-gandhi/speecht5_tts_vox_nl)，要么是 MMS TTS 检查点（请参阅[预训练 TTS 模型（pretrained models for TTS）](../chapter6/pre-trained_models)部分）。
+
+<Tip>
+    根据我们对荷兰语的实验经验，使用 MMS TTS 检查点比微调的 SpeechT5 检查点有更好的性能，但您可能会发现您的微调 TTS 检查点在您的语言中更可取。
+    如果您决定使用 MMS TTS 检查点，您需要更新<a href="https://huggingface.co/spaces/course-demos/speech-to-speech-translation/blob/a03175878f522df7445290d5508bfb5c5178f787/requirements.txt#L2">requirements.txt</a>文件，以便从 PR 分支安装<code>transformers</code>：
+    <p><code>git+https://github.com/hollance/transformers.git@6900e8ba6532162a8613d2270ec2286c3f58f57b</code></p>
+</Tip>
+
+您的 demo 应该接收一个音频文件作为输入，并返回另一个音频文件作为输出，与模板 demo 中的[`speech_to_speech_translation`](https://huggingface.co/spaces/course-demos/speech-to-speech-translation/blob/3946ba6705a6632a63de8672ac52a482ab74b3fc/app.py#L35)函数的签名相匹配。因此，我们建议您保留主函数`speech_to_speech_translation`不变，并根据需要仅更新[`translate`](https://huggingface.co/spaces/course-demos/speech-to-speech-translation/blob/a03175878f522df7445290d5508bfb5c5178f787/app.py#L24)和[`synthesise`](https://huggingface.co/spaces/course-demos/speech-to-speech-translation/blob/a03175878f522df7445290d5508bfb5c5178f787/app.py#L29)函数。
+
+一旦您在 Hugging Face Hub 上构建了您的 Gradio demo，您可以提交它进行评估。前往 Space [audio-course-u7-assessment](https://huggingface.co/spaces/huggingface-course/audio-course-u7-assessment) 并在提示时提供您的 demo 的仓库 id。这个 Space 将通过向您的 demo 发送一个样本音频文件并检查返回的音频文件是否确实是非英语的，来检查您的 demo 是否正确构建。如果您的 demo 工作正常，您将在[进度 space](https://huggingface.co/spaces/MariaK/Check-my-progress-Audio-Course)旁边获得一个绿色的勾号 ✅

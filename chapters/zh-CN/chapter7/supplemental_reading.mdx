@@ -1,0 +1,17 @@
+# 补充阅读
+
+本单元整合了之前单元的多个组件，介绍了语音到语音翻译（speech-to-speech translation）、语音助手（voice assistants）和说话人分离（speaker diarization）的任务。因此，补充阅读材料被分为这三个新任务，以方便您阅读：
+
+语音到语音翻译（Speech-to-speech translation）:
+* [STST with discrete units](https://ai.facebook.com/blog/advancing-direct-speech-to-speech-modeling-with-discrete-units/) 由 Meta AI 提供：一种直接的 STST 方法，通过编码器（encoder）-解码器（decoder）模型
+* [Hokkien direct speech-to-speech translation](https://ai.facebook.com/blog/ai-translation-hokkien/) 由 Meta AI 提供：使用带有两阶段解码器的编码器-解码器模型的直接 STST 方法
+* [Leveraging unsupervised and weakly-supervised data to improve direct STST](https://arxiv.org/abs/2203.13339) 由 Google 提供：提出了利用无监督和弱监督数据来训练直接 STST 模型的新方法，并对 Transformer 架构进行了小幅改动
+* [Translatotron-2](https://google-research.github.io/lingvo-lab/translatotron2/) 由 Google 提供：一个能够在翻译语音中保留说话人特征的系统
+
+语音助手（Voice Assistant）:
+* [Accurate wakeword detection](https://www.amazon.science/publications/accurate-detection-of-wake-word-start-and-end-using-a-cnn) 由 Amazon 提供：一种用于设备上应用的低延迟唤醒词检测方法
+* [RNN-Transducer Architecture](https://arxiv.org/pdf/1811.06621.pdf) 由 Google 提供：对于流式设备上的自动语音识别（ASR），CTC 架构的一种修改
+
+会议记录（Meeting Transcriptions）:
+* [pyannote.audio Technical Report](https://huggingface.co/pyannote/speaker-diarization/blob/main/technical_report_2.1.pdf) 由 Hervé Bredin 提供：此报告描述了 `pyannote.audio` 说话人分离（speaker diarization）管道背后的主要原则
+* [Whisper X](https://arxiv.org/pdf/2303.00747.pdf) 由 Max Bain 等人提供：使用 Whisper 模型计算单词级时间戳的优越方法
